@@ -1,0 +1,42 @@
+name: dartnative_local_auth
+description: >
+  Local (on-device) authentication for DartNative apps — Face ID / Touch ID
+  on iOS and BiometricPrompt on Android. Flutter-shaped LocalAuthentication
+  API, zero Flutter platform channels, pure FFI.
+version: 0.1.0
+publish_to: none
+
+homepage: https://github.com/flutterninja9/dartnative_local_auth
+issue_tracker: https://github.com/flutterninja9/dartnative_local_auth/issues
+topics:
+  - dartnative
+  - biometrics
+  - local-auth
+  - face-id
+  - fingerprint
+
+environment:
+  sdk: ^3.9.0-0
+
+dependencies:
+  ffi: ^2.1.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
+
+# Discovered by `dn pub get` — the app registrant imports this package and
+# calls loadSymbols() before runApp.
+dartnative:
+  plugin:
+    platforms:
+      ios:
+        ffiPlugin: true
+      android:
+        package: com.dartnative.localauth
+        pluginClass: DartNativeLocalAuthPlugin
+  registrant:
+    imports:
+      - package:dartnative_local_auth/dartnative_local_auth.dart
+    calls:
+      - LocalAuthFFIBindings.loadSymbols();
