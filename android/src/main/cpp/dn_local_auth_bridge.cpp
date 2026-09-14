@@ -54,7 +54,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* /*reserved*/) {
     g_isDeviceSupported = safeGet(env, g_bridgeClass, "isDeviceSupported", "()I");
     g_canCheckBiometrics = safeGet(env, g_bridgeClass, "canCheckBiometrics", "()I");
     g_availableBiometrics = safeGet(env, g_bridgeClass, "availableBiometrics", "()I");
-    g_authenticate = safeGet(env, g_bridgeClass, "authenticate", "(JLjava/lang/String;I)V");
+    g_authenticate = safeGet(env, g_bridgeClass, "authenticate", "(JLjava/lang/String;ILjava/lang/String;)V");
     g_stopAuthentication = safeGet(env, g_bridgeClass, "stopAuthentication", "()I");
     g_setDispatcher = safeGet(env, g_bridgeClass, "setDispatcher", "(J)V");
 
@@ -113,14 +113,18 @@ void DNLocalAuthSetDispatcher(int64_t callbackPtr) {
 }
 
 extern "C" __attribute__((visibility("default")))
-void DNLocalAuthAuthenticate(int64_t token, const char* reason, int32_t options) {
+void DNLocalAuthAuthenticate(
+    int64_t token, const char* reason, int32_t options, const char* messages
+) {
     JNIEnv* env = getEnv();
     if (!env || !g_bridgeClass || !g_authenticate) return;
     jstring jReason = reason ? env->NewStringUTF(reason) : nullptr;
+    jstring jMessages = messages ? env->NewStringUTF(messages) : nullptr;
     env->CallStaticVoidMethod(
-        g_bridgeClass, g_authenticate, (jlong)token, jReason, (jint)options
+        g_bridgeClass, g_authenticate, (jlong)token, jReason, (jint)options, jMessages
     );
     if (jReason) env->DeleteLocalRef(jReason);
+    if (jMessages) env->DeleteLocalRef(jMessages);
     if (env->ExceptionCheck()) env->ExceptionClear();
 }
 

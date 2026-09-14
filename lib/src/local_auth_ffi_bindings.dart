@@ -24,8 +24,9 @@ typedef _StopD = int Function();
 typedef _SetDispatcherC = Void Function(Int64);
 typedef _SetDispatcherD = void Function(int);
 
-typedef _AuthenticateC = Void Function(Int64, Pointer<Utf8>, Int32);
-typedef _AuthenticateD = void Function(int, Pointer<Utf8>, int);
+typedef _AuthenticateC =
+    Void Function(Int64, Pointer<Utf8>, Int32, Pointer<Utf8>);
+typedef _AuthenticateD = void Function(int, Pointer<Utf8>, int, Pointer<Utf8>);
 
 /// (token, result, message)
 typedef _AuthDispatchC = Void Function(Int64, Int32, Pointer<Utf8>);
@@ -56,7 +57,7 @@ class LocalAuthFFIBindings implements LocalAuthBackend {
   static bool _loaded = false;
 
   static final Map<int, void Function(int token, int result, String message)>
-      _pending = {};
+  _pending = {};
 
   static void _complete(int token, int result, String message) {
     final complete = _pending.remove(token);
@@ -88,8 +89,7 @@ class LocalAuthFFIBindings implements LocalAuthBackend {
       'DNLocalAuthStopAuthentication',
     );
 
-    final setDispatcher =
-        lib.lookupFunction<_SetDispatcherC, _SetDispatcherD>(
+    final setDispatcher = lib.lookupFunction<_SetDispatcherC, _SetDispatcherD>(
       'DNLocalAuthSetDispatcher',
     );
     setDispatcher(_authDispatchPtr.address);
@@ -119,15 +119,18 @@ class LocalAuthFFIBindings implements LocalAuthBackend {
     required int token,
     required String reason,
     required int options,
+    required String messages,
     required void Function(int token, int result, String message) complete,
   }) {
     _ensureLoaded();
     _pending[token] = complete;
-    final ptr = reason.toNativeUtf8();
+    final reasonPtr = reason.toNativeUtf8();
+    final messagesPtr = messages.toNativeUtf8();
     try {
-      _authenticate(token, ptr, options);
+      _authenticate(token, reasonPtr, options, messagesPtr);
     } finally {
-      calloc.free(ptr);
+      calloc.free(reasonPtr);
+      calloc.free(messagesPtr);
     }
   }
 

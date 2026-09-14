@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'types.dart';
 
 /// Encodes [AuthenticationOptions] (plus the flattened `authenticate` flags)
@@ -18,6 +20,34 @@ int encodeAuthOptions({
     bits |= LocalAuthOptionBits.persistAcrossBackgrounding;
   }
   return bits;
+}
+
+/// Encodes [AndroidAuthMessages] / [IOSAuthMessages] into the JSON payload
+/// the native bridges read. Missing fields become Flutter `local_auth`
+/// defaults. [localizedFallbackTitle] is omitted unless the caller set it
+/// (including to `''`, which hides the iOS fallback button).
+String encodeAuthMessages(Iterable<AuthMessages> authMessages) {
+  var android = const AndroidAuthMessages();
+  var ios = const IOSAuthMessages();
+  for (final message in authMessages) {
+    if (message is AndroidAuthMessages) {
+      android = message;
+    } else if (message is IOSAuthMessages) {
+      ios = message;
+    }
+  }
+
+  final payload = <String, String>{
+    'signInTitle': android.signInTitle ?? androidSignInTitle,
+    'signInHint': android.signInHint ?? androidSignInHint,
+    'cancelButton': android.cancelButton ?? androidCancelButton,
+    'iosCancelButton': ios.cancelButton ?? iosCancelButton,
+  };
+  final fallback = ios.localizedFallbackTitle;
+  if (fallback != null) {
+    payload['localizedFallbackTitle'] = fallback;
+  }
+  return jsonEncode(payload);
 }
 
 /// Decodes the native biometric bitmask into the Flutter-shaped list.
@@ -47,23 +77,31 @@ LocalAuthException? exceptionForResult(int code, String message) {
     return null;
   }
   final mapped = switch (code) {
-    LocalAuthNativeResult.userCanceled => LocalAuthExceptionCodes.userCanceled,
+    LocalAuthNativeResult.userCanceled => LocalAuthExceptionCode.userCanceled,
     LocalAuthNativeResult.systemCanceled =>
-      LocalAuthExceptionCodes.systemCanceled,
-    LocalAuthNativeResult.notAvailable => LocalAuthExceptionCodes.notAvailable,
-    LocalAuthNativeResult.notEnrolled => LocalAuthExceptionCodes.notEnrolled,
-    LocalAuthNativeResult.lockedOut => LocalAuthExceptionCodes.lockedOut,
+      LocalAuthExceptionCode.systemCanceled,
+    LocalAuthNativeResult.notAvailable =>
+      LocalAuthExceptionCode.noBiometricHardware,
+    LocalAuthNativeResult.notEnrolled =>
+      LocalAuthExceptionCode.noBiometricsEnrolled,
+    LocalAuthNativeResult.lockedOut => LocalAuthExceptionCode.temporaryLockout,
     LocalAuthNativeResult.permanentlyLockedOut =>
-      LocalAuthExceptionCodes.permanentlyLockedOut,
-    LocalAuthNativeResult.timeout => LocalAuthExceptionCodes.timeout,
+      LocalAuthExceptionCode.biometricLockout,
+    LocalAuthNativeResult.timeout => LocalAuthExceptionCode.timeout,
     LocalAuthNativeResult.passcodeNotSet =>
-      LocalAuthExceptionCodes.passcodeNotSet,
+      LocalAuthExceptionCode.noCredentialsSet,
     LocalAuthNativeResult.biometricOnlyNotSupported =>
-      LocalAuthExceptionCodes.biometricOnlyNotSupported,
-    LocalAuthNativeResult.noActivity => LocalAuthExceptionCodes.noActivity,
-    LocalAuthNativeResult.uiUnavailable =>
-      LocalAuthExceptionCodes.uiUnavailable,
-    _ => LocalAuthExceptionCodes.unknownError,
+      LocalAuthExceptionCode.noBiometricHardware,
+    LocalAuthNativeResult.noActivity => LocalAuthExceptionCode.uiUnavailable,
+    LocalAuthNativeResult.uiUnavailable => LocalAuthExceptionCode.uiUnavailable,
+    LocalAuthNativeResult.userRequestedFallback =>
+      LocalAuthExceptionCode.userRequestedFallback,
+    LocalAuthNativeResult.authInProgress =>
+      LocalAuthExceptionCode.authInProgress,
+    LocalAuthNativeResult.hardwareUnavailable =>
+      LocalAuthExceptionCode.biometricHardwareTemporarilyUnavailable,
+    LocalAuthNativeResult.deviceError => LocalAuthExceptionCode.deviceError,
+    _ => LocalAuthExceptionCode.unknownError,
   };
   return LocalAuthException(
     code: mapped,

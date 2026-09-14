@@ -17,6 +17,7 @@ class _LocalAuthDemoState extends State<LocalAuthDemo> {
   List<BiometricType> _kinds = const [];
   bool _biometricOnly = false;
   bool _persist = false;
+  bool _customCopy = false;
   String _status = 'Tap a button to query the device.';
   final List<String> _log = [];
 
@@ -60,6 +61,19 @@ class _LocalAuthDemoState extends State<LocalAuthDemo> {
         localizedReason: 'Unlock the local_auth_kit example',
         biometricOnly: _biometricOnly,
         persistAcrossBackgrounding: _persist,
+        authMessages: _customCopy
+            ? const [
+                AndroidAuthMessages(
+                  signInTitle: 'Unlock local_auth_kit',
+                  signInHint: 'Use biometrics or device PIN',
+                  cancelButton: 'No thanks',
+                ),
+                IOSAuthMessages(
+                  cancelButton: 'No thanks',
+                  localizedFallbackTitle: 'Use passcode',
+                ),
+              ]
+            : const [AndroidAuthMessages(), IOSAuthMessages()],
       );
       setState(() {
         _status = ok ? 'Authenticated' : 'Not authenticated';
@@ -67,8 +81,9 @@ class _LocalAuthDemoState extends State<LocalAuthDemo> {
       });
     } on LocalAuthException catch (e) {
       setState(() {
-        _status = 'Failed: ${e.code}${e.description == null ? '' : ' — ${e.description}'}';
-        _append('authenticate exception → ${e.code}');
+        _status =
+            'Failed: ${e.code.name}${e.description == null ? '' : ' — ${e.description}'}';
+        _append('authenticate exception → ${e.code.name}');
       });
     } catch (e) {
       setState(() {
@@ -122,6 +137,7 @@ class _LocalAuthDemoState extends State<LocalAuthDemo> {
           const _Section('Authenticate'),
           _Value('biometricOnly', '$_biometricOnly'),
           _Value('persistAcrossBackgrounding', '$_persist'),
+          _Value('custom authMessages', '$_customCopy'),
           const SizedBox(height: 12),
           Button(
             title: _biometricOnly
@@ -133,10 +149,21 @@ class _LocalAuthDemoState extends State<LocalAuthDemo> {
           ),
           const SizedBox(height: 8),
           Button(
-            title: _persist ? 'Disable persist-across-background' : 'Enable persist-across-background',
+            title: _persist
+                ? 'Disable persist-across-background'
+                : 'Enable persist-across-background',
             variant: ButtonVariant.tinted,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             onPressed: () => setState(() => _persist = !_persist),
+          ),
+          const SizedBox(height: 8),
+          Button(
+            title: _customCopy
+                ? 'Use default prompt copy'
+                : 'Use custom authMessages',
+            variant: ButtonVariant.tinted,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            onPressed: () => setState(() => _customCopy = !_customCopy),
           ),
           const SizedBox(height: 8),
           Button(
@@ -193,17 +220,17 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Text(
-          title,
-          style: const TextStyle(
-            color: Color(0xFF636366),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Text(
+      title,
+      style: const TextStyle(
+        color: Color(0xFF636366),
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.5,
+      ),
+    ),
+  );
 }
 
 class _Value extends StatelessWidget {
@@ -213,12 +240,12 @@ class _Value extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(
-          '$label: $value',
-          style: const TextStyle(color: Color(0xFF111111), fontSize: 16),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      '$label: $value',
+      style: const TextStyle(color: Color(0xFF111111), fontSize: 16),
+    ),
+  );
 }
 
 class _Hint extends StatelessWidget {
@@ -227,10 +254,10 @@ class _Hint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(top: 6),
-        child: Text(
-          text,
-          style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
-        ),
-      );
+    padding: const EdgeInsets.only(top: 6),
+    child: Text(
+      text,
+      style: const TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
+    ),
+  );
 }

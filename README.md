@@ -49,10 +49,20 @@ try {
   final ok = await auth.authenticate(
     localizedReason: 'Unlock to continue',
     biometricOnly: true, // no PIN / passcode fallback
+    authMessages: const [
+      AndroidAuthMessages(
+        signInTitle: 'Unlock to continue',
+        cancelButton: 'No thanks',
+      ),
+      IOSAuthMessages(
+        cancelButton: 'No thanks',
+        localizedFallbackTitle: 'Use passcode',
+      ),
+    ],
   );
   if (ok) { /* unlocked */ }
 } on LocalAuthException catch (e) {
-  if (e.code == LocalAuthExceptionCodes.userCanceled) {
+  if (e.code == LocalAuthExceptionCode.userCanceled) {
     // user backed out
   }
 }
@@ -70,6 +80,9 @@ await auth.authenticate(
   ),
 );
 ```
+
+`LocalAuthExceptionCodes` aliases the 2.x names onto the 3.x enum, so
+`e.code == LocalAuthExceptionCodes.userCanceled` still compiles.
 
 ## Platform setup
 
@@ -101,14 +114,20 @@ The plugin declares `USE_BIOMETRIC` / `USE_FINGERPRINT`. The host
 | `authenticate(...)` | Show the system prompt; `true` on success |
 | `stopAuthentication()` | Dismiss an in-flight prompt |
 
-Failures throw `LocalAuthException` with `local_auth`-compatible codes:
-`NotAvailable`, `NotEnrolled`, `LockedOut`, `PermanentlyLockedOut`,
-`UserCanceled`, `SystemCanceled`, `Timeout`, `PasscodeNotSet`,
-`BiometricOnlyNotSupported`, `NoActivity`, `UIUnavailable`, `UnknownError`.
+`authenticate` accepts `authMessages` (`AndroidAuthMessages`,
+`IOSAuthMessages`) to customize title, subtitle, cancel, and iOS fallback
+copy — the same shape as Flutter `local_auth` 3.x.
+
+Failures throw `LocalAuthException` with `LocalAuthExceptionCode` values:
+`userCanceled`, `systemCanceled`, `noBiometricHardware`,
+`noBiometricsEnrolled`, `noCredentialsSet`, `temporaryLockout`,
+`biometricLockout`, `timeout`, `uiUnavailable`, `authInProgress`,
+`userRequestedFallback`, `biometricHardwareTemporarilyUnavailable`,
+`deviceError`, `unknownError`.
 
 ## Platforms
 
-v0.1.0 ships **iOS and Android**. Other platforms can follow the same FFI
+v0.2.0 ships **iOS and Android**. Other platforms can follow the same FFI
 surface later.
 
 ## License

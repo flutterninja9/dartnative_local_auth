@@ -1,7 +1,7 @@
 name: local_auth_kit_example
 description: "Example app for local_auth_kit"
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.2.0+1
 
 environment:
   sdk: ^3.12.0-192.0.dev

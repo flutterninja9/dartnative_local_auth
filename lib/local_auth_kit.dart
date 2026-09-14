@@ -17,6 +17,10 @@
 /// if (await auth.canCheckBiometrics) {
 ///   final ok = await auth.authenticate(
 ///     localizedReason: 'Unlock to continue',
+///     authMessages: const [
+///       AndroidAuthMessages(signInTitle: 'Unlock to continue'),
+///       IOSAuthMessages(cancelButton: 'No thanks'),
+///     ],
 ///   );
 /// }
 /// ```

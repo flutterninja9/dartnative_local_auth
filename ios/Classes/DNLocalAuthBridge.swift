@@ -5,6 +5,7 @@
 // Dart apps can prompt Face ID / Touch ID / Optic ID / device passcode
 // without Flutter platform channels.
 
+import Foundation
 import Darwin
 import LocalAuthentication
 import UIKit
@@ -25,6 +26,10 @@ private enum ResultCode: Int32 {
   case noActivity = 10
   case uiUnavailable = 11
   case error = 12
+  case userRequestedFallback = 13
+  case authInProgress = 14
+  case hardwareUnavailable = 15
+  case deviceError = 16
 }
 
 private let optionBiometricOnly: Int32 = 1 << 0
@@ -74,11 +79,34 @@ private func fireResult(token: Int64, code: ResultCode, message: String = "") {
 
 // MARK: - Session
 
+private struct PromptStrings {
+  var iosCancelButton = "OK"
+  var localizedFallbackTitle: String? = nil
+}
+
+private func parseMessages(_ ptr: UnsafePointer<CChar>?) -> PromptStrings {
+  var parsed = PromptStrings()
+  guard let json = cString(ptr),
+        let data = json.data(using: .utf8),
+        let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+  else {
+    return parsed
+  }
+  if let v = obj["iosCancelButton"] as? String, !v.isEmpty {
+    parsed.iosCancelButton = v
+  }
+  if let v = obj["localizedFallbackTitle"] as? String {
+    parsed.localizedFallbackTitle = v
+  }
+  return parsed
+}
+
 private final class AuthSession {
   let context = LAContext()
   var persist = false
   var token: Int64 = 0
   var reason = ""
+  var strings = PromptStrings()
   var policy: LAPolicy = .deviceOwnerAuthentication
   var becomingActive: NSObjectProtocol?
 
@@ -115,7 +143,7 @@ private func mapLAError(_ error: Error?) -> ResultCode {
   case .passcodeNotSet:
     return .passcodeNotSet
   case .userFallback:
-    return .userCanceled
+    return .userRequestedFallback
   case .authenticationFailed:
     return .error
   default:
@@ -182,22 +210,30 @@ public func DNLocalAuthGetAvailableBiometrics() -> Int32 {
 public func DNLocalAuthAuthenticate(
   _ token: Int64,
   _ reasonPtr: UnsafePointer<CChar>?,
-  _ options: Int32
+  _ options: Int32,
+  _ messagesPtr: UnsafePointer<CChar>?
 ) {
   guard let reason = cString(reasonPtr) else {
     fireResult(token: token, code: .error, message: "localizedReason must not be empty")
     return
   }
 
+  let strings = parseMessages(messagesPtr)
+
   DispatchQueue.main.async {
     _session?.invalidate()
     let session = AuthSession()
     session.token = token
     session.reason = reason
+    session.strings = strings
     session.persist = (options & optionPersist) != 0
     session.policy = (options & optionBiometricOnly) != 0
       ? .deviceOwnerAuthenticationWithBiometrics
       : .deviceOwnerAuthentication
+    session.context.localizedCancelTitle = strings.iosCancelButton
+    if let fallback = strings.localizedFallbackTitle {
+      session.context.localizedFallbackTitle = fallback
+    }
     _session = session
     evaluate(session)
   }

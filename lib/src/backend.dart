@@ -12,6 +12,7 @@ abstract class LocalAuthBackend {
     required int token,
     required String reason,
     required int options,
+    required String messages,
     required void Function(int token, int result, String message) complete,
   });
 

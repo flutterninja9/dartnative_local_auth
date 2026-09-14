@@ -1,51 +1,68 @@
+export 'auth_messages.dart';
+
 /// Biometric kinds a device may expose.
 ///
 /// Matches `package:local_auth`'s [BiometricType] so Flutter ports can keep
 /// the same switch cases. Android also reports [weak] / [strong] (the
 /// BiometricPrompt authenticator classes). iOS reports the enrolled
 /// modality: [face], [fingerprint], or [iris] (Optic ID).
-enum BiometricType {
-  face,
-  fingerprint,
-  iris,
-  weak,
-  strong,
+enum BiometricType { face, fingerprint, iris, weak, strong }
+
+/// Types of [LocalAuthException]s, matching Flutter `local_auth` 3.x.
+///
+/// New values may be added later — always include a fallback when switching.
+enum LocalAuthExceptionCode {
+  authInProgress,
+  uiUnavailable,
+  userCanceled,
+  timeout,
+  systemCanceled,
+  noCredentialsSet,
+  noBiometricsEnrolled,
+  noBiometricHardware,
+  biometricHardwareTemporarilyUnavailable,
+  temporaryLockout,
+  biometricLockout,
+  userRequestedFallback,
+  deviceError,
+  unknownError,
 }
 
-/// How a failed [LocalAuthentication.authenticate] should be classified.
-///
-/// String values match `local_auth`'s `LocalAuthExceptionCodes` so existing
-/// `on LocalAuthException catch` handlers keep working.
+/// 2.x names kept as aliases onto [LocalAuthExceptionCode] so existing
+/// `e.code == LocalAuthExceptionCodes.userCanceled` checks still compile.
 abstract final class LocalAuthExceptionCodes {
-  static const notAvailable = 'NotAvailable';
-  static const notEnrolled = 'NotEnrolled';
-  static const lockedOut = 'LockedOut';
-  static const permanentlyLockedOut = 'PermanentlyLockedOut';
-  static const userCanceled = 'UserCanceled';
-  static const systemCanceled = 'SystemCanceled';
-  static const timeout = 'Timeout';
-  static const passcodeNotSet = 'PasscodeNotSet';
-  static const biometricOnlyNotSupported = 'BiometricOnlyNotSupported';
-  static const noActivity = 'NoActivity';
-  static const uiUnavailable = 'UIUnavailable';
-  static const unknownError = 'UnknownError';
+  static const notAvailable = LocalAuthExceptionCode.noBiometricHardware;
+  static const notEnrolled = LocalAuthExceptionCode.noBiometricsEnrolled;
+  static const lockedOut = LocalAuthExceptionCode.temporaryLockout;
+  static const permanentlyLockedOut = LocalAuthExceptionCode.biometricLockout;
+  static const userCanceled = LocalAuthExceptionCode.userCanceled;
+  static const systemCanceled = LocalAuthExceptionCode.systemCanceled;
+  static const timeout = LocalAuthExceptionCode.timeout;
+  static const passcodeNotSet = LocalAuthExceptionCode.noCredentialsSet;
+  static const biometricOnlyNotSupported =
+      LocalAuthExceptionCode.noBiometricHardware;
+  static const noActivity = LocalAuthExceptionCode.uiUnavailable;
+  static const uiUnavailable = LocalAuthExceptionCode.uiUnavailable;
+  static const unknownError = LocalAuthExceptionCode.unknownError;
 }
 
 /// Thrown by [LocalAuthentication.authenticate] when the attempt does not
-/// succeed. User cancel is also thrown (code [LocalAuthExceptionCodes.userCanceled])
+/// succeed. User cancel is also thrown (code [LocalAuthExceptionCode.userCanceled])
 /// so callers can distinguish "user backed out" from "hardware failed".
 class LocalAuthException implements Exception {
   const LocalAuthException({
     required this.code,
     this.description,
+    this.details,
   });
 
-  final String code;
+  final LocalAuthExceptionCode code;
   final String? description;
+  final Object? details;
 
   @override
   String toString() =>
-      'LocalAuthException($code${description == null ? '' : ', $description'})';
+      'LocalAuthException(${code.name}${description == null ? '' : ', $description'}${details == null ? '' : ', $details'})';
 }
 
 /// Optional bag matching `local_auth` 2.x. Prefer the named arguments on
@@ -98,6 +115,10 @@ abstract final class LocalAuthNativeResult {
   static const noActivity = 10;
   static const uiUnavailable = 11;
   static const error = 12;
+  static const userRequestedFallback = 13;
+  static const authInProgress = 14;
+  static const hardwareUnavailable = 15;
+  static const deviceError = 16;
 }
 
 /// Native biometric bitmask. Keep in sync with the Swift/Kotlin bridges.

@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import org.json.JSONObject
 
 private const val TAG = "DNLocalAuth"
 
@@ -29,6 +30,12 @@ private const val RESULT_BIOMETRIC_ONLY_NOT_SUPPORTED = 9
 private const val RESULT_NO_ACTIVITY = 10
 private const val RESULT_UI_UNAVAILABLE = 11
 private const val RESULT_ERROR = 12
+@Suppress("unused")
+private const val RESULT_USER_REQUESTED_FALLBACK = 13
+@Suppress("unused")
+private const val RESULT_AUTH_IN_PROGRESS = 14
+private const val RESULT_HARDWARE_UNAVAILABLE = 15
+private const val RESULT_DEVICE_ERROR = 16
 
 private const val OPTION_BIOMETRIC_ONLY = 1 shl 0
 private const val OPTION_SENSITIVE = 1 shl 1
@@ -127,13 +134,13 @@ fun availableBiometrics(): Int {
 }
 
 @Keep
-fun authenticate(token: Long, reason: String?, options: Int) {
+fun authenticate(token: Long, reason: String?, options: Int, messages: String?) {
     if (reason.isNullOrBlank()) {
         deliver(token, RESULT_ERROR, "localizedReason must not be empty")
         return
     }
     mainHandler.post {
-        startPrompt(token, reason, options, isRetry = false)
+        startPrompt(token, reason, options, messages, isRetry = false)
     }
 }
 
@@ -144,7 +151,32 @@ fun stopAuthentication(): Int {
     return if (had) 1 else 0
 }
 
-private fun startPrompt(token: Long, reason: String, options: Int, isRetry: Boolean) {
+private data class PromptStrings(
+    val title: String,
+    val hint: String,
+    val cancel: String,
+)
+
+private fun parseMessages(raw: String?): PromptStrings {
+    val obj = try {
+        JSONObject(raw ?: "{}")
+    } catch (_: Exception) {
+        JSONObject()
+    }
+    return PromptStrings(
+        title = obj.optString("signInTitle").ifEmpty { "Authentication required" },
+        hint = obj.optString("signInHint").ifEmpty { "Verify identity" },
+        cancel = obj.optString("cancelButton").ifEmpty { "Cancel" },
+    )
+}
+
+private fun startPrompt(
+    token: Long,
+    reason: String,
+    options: Int,
+    messages: String?,
+    isRetry: Boolean,
+) {
     val activity = LocalAuthHost.activity
     if (activity == null) {
         deliver(token, RESULT_NO_ACTIVITY, "No FragmentActivity attached")
@@ -154,23 +186,28 @@ private fun startPrompt(token: Long, reason: String, options: Int, isRetry: Bool
     val biometricOnly = options and OPTION_BIOMETRIC_ONLY != 0
     val persist = options and OPTION_PERSIST != 0
     val sensitive = options and OPTION_SENSITIVE != 0
+    val strings = parseMessages(messages)
 
     val authenticators = if (biometricOnly) {
-        BiometricManager.Authenticators.BIOMETRIC_WEAK
+        BiometricManager.Authenticators.BIOMETRIC_WEAK or
+            BiometricManager.Authenticators.BIOMETRIC_STRONG
     } else {
         BiometricManager.Authenticators.BIOMETRIC_WEAK or
+            BiometricManager.Authenticators.BIOMETRIC_STRONG or
             BiometricManager.Authenticators.DEVICE_CREDENTIAL
     }
 
     val capability = BiometricManager.from(activity).canAuthenticate(authenticators)
-    if (capability == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE ||
-        capability == BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE
-    ) {
+    if (capability == BiometricManager.BIOMETRIC_ERROR_NO_HARDWARE) {
         deliver(
             token,
             if (biometricOnly) RESULT_BIOMETRIC_ONLY_NOT_SUPPORTED else RESULT_NOT_AVAILABLE,
             "authenticator unavailable",
         )
+        return
+    }
+    if (capability == BiometricManager.BIOMETRIC_ERROR_HW_UNAVAILABLE) {
+        deliver(token, RESULT_HARDWARE_UNAVAILABLE, "authenticator unavailable")
         return
     }
     if (capability == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED) {
@@ -195,7 +232,7 @@ private fun startPrompt(token: Long, reason: String, options: Int, isRetry: Bool
             prompt = null
             val mapped = mapError(errorCode)
             if (persist && mapped == RESULT_SYSTEM_CANCELED && !isRetry) {
-                retryWhenResumed(activity, token, reason, options)
+                retryWhenResumed(activity, token, reason, options, messages)
                 return
             }
             clearPersist(activity)
@@ -208,12 +245,14 @@ private fun startPrompt(token: Long, reason: String, options: Int, isRetry: Bool
     }
 
     val infoBuilder = BiometricPrompt.PromptInfo.Builder()
-        .setTitle(reason)
+        .setTitle(strings.title)
+        .setSubtitle(strings.hint)
+        .setDescription(reason)
         .setAllowedAuthenticators(authenticators)
         .setConfirmationRequired(sensitive)
 
     if (biometricOnly) {
-        infoBuilder.setNegativeButtonText("Cancel")
+        infoBuilder.setNegativeButtonText(strings.cancel)
     }
 
     try {
@@ -231,12 +270,13 @@ private fun retryWhenResumed(
     token: Long,
     reason: String,
     options: Int,
+    messages: String?,
 ) {
     clearPersist(activity)
     val observer = object : DefaultLifecycleObserver {
         override fun onResume(owner: LifecycleOwner) {
             clearPersist(activity)
-            startPrompt(token, reason, options, isRetry = true)
+            startPrompt(token, reason, options, messages, isRetry = true)
         }
     }
     persistObserver = observer
@@ -274,13 +314,14 @@ private fun mapError(errorCode: Int): Int = when (errorCode) {
     BiometricPrompt.ERROR_CANCELED -> RESULT_SYSTEM_CANCELED
     BiometricPrompt.ERROR_NO_BIOMETRICS -> RESULT_NOT_ENROLLED
     BiometricPrompt.ERROR_NO_DEVICE_CREDENTIAL -> RESULT_PASSCODE_NOT_SET
-    BiometricPrompt.ERROR_HW_NOT_PRESENT,
-    BiometricPrompt.ERROR_HW_UNAVAILABLE,
-    -> RESULT_NOT_AVAILABLE
+    BiometricPrompt.ERROR_HW_NOT_PRESENT -> RESULT_NOT_AVAILABLE
+    BiometricPrompt.ERROR_HW_UNAVAILABLE -> RESULT_HARDWARE_UNAVAILABLE
     BiometricPrompt.ERROR_LOCKOUT -> RESULT_LOCKED_OUT
     BiometricPrompt.ERROR_LOCKOUT_PERMANENT -> RESULT_PERMANENTLY_LOCKED_OUT
     BiometricPrompt.ERROR_TIMEOUT -> RESULT_TIMEOUT
     BiometricPrompt.ERROR_NO_SPACE,
+    BiometricPrompt.ERROR_SECURITY_UPDATE_REQUIRED,
+    -> RESULT_DEVICE_ERROR
     BiometricPrompt.ERROR_VENDOR,
     BiometricPrompt.ERROR_UNABLE_TO_PROCESS,
     -> RESULT_ERROR
