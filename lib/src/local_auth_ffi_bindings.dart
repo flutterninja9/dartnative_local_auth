@@ -1,8 +1,8 @@
-/// FFI bindings for the dartnative_local_auth native layer (iOS + Android).
+/// FFI bindings for the local_auth_kit native layer (iOS + Android).
 ///
 /// On iOS the @_cdecl symbols are linked into the process binary, so we
 /// resolve them through `DynamicLibrary.process()`. On Android the JNI
-/// bridge lives in `libdartnative_local_auth.so`.
+/// bridge lives in `liblocal_auth_kit.so`.
 ///
 /// Call [LocalAuthFFIBindings.loadSymbols] once at app start (the generated
 /// registrant does this). Safe to call again — it is idempotent.
@@ -69,7 +69,7 @@ class LocalAuthFFIBindings implements LocalAuthBackend {
     if (!Platform.isIOS && !Platform.isAndroid) return;
 
     final lib = Platform.isAndroid
-        ? DynamicLibrary.open('libdartnative_local_auth.so')
+        ? DynamicLibrary.open('liblocal_auth_kit.so')
         : DynamicLibrary.process();
 
     _isDeviceSupported = lib.lookupFunction<_IntC, _IntD>(

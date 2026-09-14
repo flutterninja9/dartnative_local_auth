@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="dartnative_local_auth_example"
+        android:label="local_auth_kit_example"
         android:name=".Application"
         android:icon="@mipmap/ic_launcher">
         <activity

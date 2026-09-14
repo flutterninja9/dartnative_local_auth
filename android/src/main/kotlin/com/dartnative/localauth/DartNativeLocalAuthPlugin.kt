@@ -8,7 +8,7 @@ import androidx.fragment.app.FragmentActivity
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 
 /**
- * Flutter plugin entry for dartnative_local_auth.
+ * Flutter plugin entry for local_auth_kit.
  *
  * Loads the JNI `.so` and tracks the current [FragmentActivity] via
  * [Application.ActivityLifecycleCallbacks] so [BiometricPrompt] has a host.
@@ -19,11 +19,11 @@ class DartNativeLocalAuthPlugin : FlutterPlugin {
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         LocalAuthHost.attach(binding.applicationContext)
         try {
-            System.loadLibrary("dartnative_local_auth")
+            System.loadLibrary("local_auth_kit")
         } catch (e: UnsatisfiedLinkError) {
             android.util.Log.e(
                 "DNLocalAuth",
-                "Failed to load libdartnative_local_auth.so: ${e.message}",
+                "Failed to load liblocal_auth_kit.so: ${e.message}",
             )
         }
     }

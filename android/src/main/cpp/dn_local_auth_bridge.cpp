@@ -1,5 +1,5 @@
 /**
- * dn_local_auth_bridge.cpp — dartnative_local_auth Android JNI/C bridge.
+ * dn_local_auth_bridge.cpp — local_auth_kit Android JNI/C bridge.
  *
  * Dart ──[FFI]──► extern "C" DNLocalAuth* ──[JNI]──► Kotlin DNLocalAuthBridgeKt
  */

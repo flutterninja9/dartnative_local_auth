@@ -1,4 +1,4 @@
-# dartnative_local_auth example
+# local_auth_kit example
 
 ```sh
 cd example

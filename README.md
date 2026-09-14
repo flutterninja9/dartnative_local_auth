@@ -1,4 +1,4 @@
-# dartnative_local_auth
+# local_auth_kit
 
 On-device authentication for DartNative — Face ID / Touch ID / Optic ID on
 iOS, and `BiometricPrompt` (biometrics + optional PIN / pattern / passcode)
@@ -12,7 +12,7 @@ import.
 
 ```yaml
 dependencies:
-  dartnative_local_auth:
+  local_auth_kit:
     path: ../dartnative_local_auth   # or the dartpub.dev version once published
 ```
 
@@ -32,7 +32,7 @@ The generated registrant calls `LocalAuthFFIBindings.loadSymbols()`.
 ## Usage
 
 ```dart
-import 'package:dartnative_local_auth/dartnative_local_auth.dart';
+import 'package:local_auth_kit/local_auth_kit.dart';
 
 final auth = LocalAuthentication();
 

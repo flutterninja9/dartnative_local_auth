@@ -1,5 +1,5 @@
 // DNLocalAuthBridge.swift
-// @_cdecl FFI entry points for dartnative_local_auth.
+// @_cdecl FFI entry points for local_auth_kit.
 //
 // Exposes LocalAuthentication.framework as a small set of C functions so
 // Dart apps can prompt Face ID / Touch ID / Optic ID / device passcode

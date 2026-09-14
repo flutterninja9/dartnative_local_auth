@@ -1,4 +1,4 @@
-name: dartnative_local_auth
+name: local_auth_kit
 description: >
   Local (on-device) authentication for DartNative apps — Face ID / Touch ID
   on iOS and BiometricPrompt on Android. Flutter-shaped LocalAuthentication
@@ -37,6 +37,6 @@ dartnative:
         pluginClass: DartNativeLocalAuthPlugin
   registrant:
     imports:
-      - package:dartnative_local_auth/dartnative_local_auth.dart
+      - package:local_auth_kit/local_auth_kit.dart
     calls:
       - LocalAuthFFIBindings.loadSymbols();

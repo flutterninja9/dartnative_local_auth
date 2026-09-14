@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-  s.name             = 'dartnative_local_auth'
+  s.name             = 'local_auth_kit'
   s.version          = '0.1.0'
   s.summary          = 'Local authentication (Face ID / Touch ID) for DartNative.'
   s.description      = <<-DESC

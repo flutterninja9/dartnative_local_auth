@@ -1,5 +1,5 @@
-import 'package:dartnative_local_auth/dartnative_local_auth.dart';
-import 'package:dartnative_local_auth/src/codec.dart';
+import 'package:local_auth_kit/local_auth_kit.dart';
+import 'package:local_auth_kit/src/codec.dart';
 import 'package:test/test.dart';
 
 void main() {

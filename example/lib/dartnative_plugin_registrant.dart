@@ -13,14 +13,14 @@
 // overwriting it.
 //
 // Plugins loaded:
-//   • dartnative_local_auth
+//   • local_auth_kit
 
 import 'dart:io' show Platform;
 
 import 'package:dartnative/dartnative.dart';
 import 'package:dartnative_ios/dartnative_ios.dart';
 import 'package:dartnative_android/dartnative_android.dart';
-import 'package:dartnative_local_auth/dartnative_local_auth.dart';
+import 'package:local_auth_kit/local_auth_kit.dart';
 
 abstract final class DartNativePluginRegistrant {
   /// Registers the platform bindings and loads every DartNative plugin's
@@ -39,15 +39,15 @@ abstract final class DartNativePluginRegistrant {
       DartNativeLicense.instance.noteTrialEnded();
     }
     DartNativeLicense.instance.reportPluginUsage(const <String>[
-      'dartnative_local_auth',
       'dartnative_skia',
+      'local_auth_kit',
     ]);
     registerNativeBindings(
       Platform.isAndroid
           ? AndroidNativeBindings.instance
           : IOSNativeBindings.instance,
     );
-    _load('dartnative_local_auth', () {
+    _load('local_auth_kit', () {
       LocalAuthFFIBindings.loadSymbols();
     });
   }

@@ -1,3 +1,7 @@
+## Unreleased
+
+- Renamed the Dart package from `dartnative_local_auth` to `local_auth_kit`.
+
 ## 0.1.0
 
 - Initial Android + iOS release.

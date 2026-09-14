@@ -1,5 +1,5 @@
 import 'package:dartnative/dartnative.dart';
-import 'package:dartnative_local_auth/dartnative_local_auth.dart';
+import 'package:local_auth_kit/local_auth_kit.dart';
 
 /// Exercises the public `LocalAuthentication` API on a device.
 class LocalAuthDemo extends StatefulWidget {
@@ -57,7 +57,7 @@ class _LocalAuthDemoState extends State<LocalAuthDemo> {
     setState(() => _status = 'Prompting…');
     try {
       final ok = await _auth.authenticate(
-        localizedReason: 'Unlock the dartnative_local_auth example',
+        localizedReason: 'Unlock the local_auth_kit example',
         biometricOnly: _biometricOnly,
         persistAcrossBackgrounding: _persist,
       );
@@ -92,7 +92,7 @@ class _LocalAuthDemoState extends State<LocalAuthDemo> {
       brightness: Brightness.light,
       appBar: AppBar(
         title: const Text(
-          'dartnative_local_auth',
+          'local_auth_kit',
           style: TextStyle(
             color: Color(0xFF111111),
             fontSize: 17,

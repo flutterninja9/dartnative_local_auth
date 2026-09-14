@@ -1,4 +1,4 @@
-/// dartnative_local_auth — Face ID / fingerprint / device credentials
+/// local_auth_kit — Face ID / fingerprint / device credentials
 /// for DartNative apps.
 ///
 /// Backed by `LocalAuthentication` on iOS and `BiometricPrompt` on Android,
@@ -11,7 +11,7 @@
 ///
 /// **Usage:**
 /// ```dart
-/// import 'package:dartnative_local_auth/dartnative_local_auth.dart';
+/// import 'package:local_auth_kit/local_auth_kit.dart';
 ///
 /// final auth = LocalAuthentication();
 /// if (await auth.canCheckBiometrics) {
